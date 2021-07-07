@@ -1,40 +1,56 @@
 #include <ArduinoOTA.h>
+
+/* WIFI AP */
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
-#include <NTPClient.h>
+#include <WiFiUdp.h>
+// const char* ssid = "Hack5";
+// const char* password = "#Zline159";
+const char* ssid = "openSUSE";
+const char* password = "12345678";
+/* Put IP Address details */
+// IPAddress local_ip(192, 168, 254, 253);
+// IPAddress gateway(192, 168, 254, 254);
+// IPAddress subnet(255, 255, 255, 0);
+ESP8266WebServer server(80);
+WiFiClient espClient;
 
-// Servo motor
-#include <Adafruit_PWMServoDriver.h>
-#include <Wire.h>
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
-uint8_t servonum = 0;
-#define SERVO_FREQ 50
+// MQTT Broker
+#include <PubSubClient.h>
+
+const char* mqtt_broker = "mqtt.flespi.io";
+const char* mqtt_username = "FvBmZFhLqUUra9ATmODV8bkqF29EjzLOVc1IG6kUP2bPZAw9e0UbZ3ruVoW5MxHv";
+const char* mqtt_password = "";
+const int mqtt_port = 1883;
+PubSubClient mqttClient(espClient);
+String journal = "";
 
 // NTP server
-#include <WiFiUdp.h>
+#include <NTPClient.h>
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600);
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600);
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+int time_over = 0;
+
+// // Servo motor
+#include <Servo.h>
+Servo myservo;       // create servo object to control a servo
+int open = 0;        // variable to store the servo position
+int close = 125;     // variable to store the servo position
+int servo_pin = D5;  // for ESP8266 microcontroller
 
 // DHT Sensor
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
 #define DHTTYPE DHT11
-uint8_t DHTPin = D8;
+uint8_t DHTPin = D7;
 DHT dht(DHTPin, DHTTYPE);
-float Temperature;
-float Humidity;
-
-/* WIFI AP */
-const char* ssid = "Hack5";
-const char* password = "#Zline159";
-/* Put IP Address details */
-IPAddress local_ip(192, 168, 254, 253);
-IPAddress gateway(192, 168, 254, 254);
-IPAddress subnet(255, 255, 255, 0);
-
-ESP8266WebServer server(80);
+float Temperature = 0;
+float Humidity = 0;
+float oldTemperature = 0;
+float oldHumidity = 0;
 
 //variabls for blinking an LED with Millis
 const int led = D0;                // ESP8266 Pin to which onboard LED is connected
@@ -42,11 +58,11 @@ unsigned long previousMillis = 0;  // will store last time LED was updated
 const long interval = 1000;        // interval at which to blink (milliseconds)
 int ledState = LOW;                // ledState used to set the LED
 
-uint8_t LED1pin = D7;
-bool LED1status = LOW;
+// uint8_t LED1pin = D7;
+// bool LED1status = LOW;
 
-uint8_t LED2pin = D6;
-bool LED2status = LOW;
+// uint8_t LED2pin = D6;
+// bool LED2status = LOW;
 
 String stringDateTime = "";
 
@@ -55,21 +71,24 @@ void handle_feed();
 void handle_dht();
 void handle_NotFound();
 String SendHTML();
+void mqttCallback(char* topic, byte* payload, unsigned int length);
+void mqttReconnect();
+void feed();
 
 void setup() {
   pinMode(led, OUTPUT);
+
   pinMode(DHTPin, INPUT);
   dht.begin();
 
-  pwm.begin();
-  pwm.setOscillatorFrequency(27000000);
-  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
+  myservo.attach(servo_pin);  // attaches the servo on GIO2 to the servo object
+  myservo.write(close);
 
   Serial.begin(115200);
   Serial.println("\r\nBooting");
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  WiFi.config(local_ip, gateway, subnet);
+  //WiFi.config(local_ip, gateway, subnet);
 
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
@@ -132,13 +151,19 @@ void setup() {
   Serial.println("HTTP server started");
 
   timeClient.begin();
+
+  mqttClient.setServer(mqtt_broker, mqtt_port);
+  mqttClient.setCallback(mqttCallback);
 }
 
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
+  if (!mqttClient.connected()) {
+    mqttReconnect();
+  }
+  mqttClient.loop();
   timeClient.update();
-  stringDateTime = timeClient.getFormattedTime();
 
   //loop to blink without delay
   unsigned long currentMillis = millis();
@@ -149,6 +174,38 @@ void loop() {
     ledState = not(ledState);
     // set the LED with the ledState of the variable:
     digitalWrite(led, ledState);
+
+    if (ledState) {
+      Temperature = dht.readTemperature();  // Gets the values of the temperature
+      if (Temperature != oldTemperature) {
+        oldTemperature = Temperature;
+        String T = String(Temperature, 1);
+        mqttClient.publish("Temperature", T.c_str());
+        Serial.print(timeClient.getFormattedTime());
+        Serial.print(" Temperature ");
+        Serial.print(T.c_str());
+        Serial.println("°C");
+      }
+
+      Humidity = dht.readHumidity();  // Gets the values of the humidity
+      if (Humidity != oldHumidity) {
+        oldHumidity = Humidity;
+        String H = String(Humidity, 0);
+        mqttClient.publish("Humidity", H.c_str());
+        Serial.print(timeClient.getFormattedTime());
+        Serial.print(" Humidity ");
+        Serial.print(H.c_str());
+        Serial.println("%");
+      }
+
+      if (time_over) {
+        time_over--;
+        mqttClient.publish("timer", String(time_over).c_str());
+      } else {
+        time_over = 21600;
+        feed();
+      }
+    }
   }
 }
 
@@ -161,16 +218,6 @@ void handle_feed() {
 }
 
 void handle_dht() {
-  float Temperature = dht.readTemperature();  // Gets the values of the temperature
-  float Humidity = dht.readHumidity();        // Gets the values of the humidity
-
-  Serial.print("Time: ");
-  Serial.print(stringDateTime);
-  Serial.print(" / Temperature: ");
-  Serial.print(Temperature);
-  Serial.print(" / Humidity: ");
-  Serial.println(Humidity);
-
   String dht = "{\"Temperature\":";
   dht += Temperature;
   dht += ", \"Humidity\":";
@@ -275,4 +322,57 @@ String SendHTML() {
   ptr += "</body>\n";
   ptr += "</html>\n";
   return ptr;
+}
+
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  String buffer = "";
+  for (int i = 0; i < length; i++) {
+    buffer += (char)payload[i];
+  }
+  Serial.println(buffer);
+  if (buffer == "feed") {
+    feed();
+    // } else if (buffer.indexOf(":")) {
+    //   // timer
+    //   mqttClient.publish("next_feed", buffer.c_str());
+  } else {
+    time_over = buffer.toInt();
+    Serial.print("Update timer ");
+    Serial.println(time_over, DEC);
+  }
+}
+
+void mqttReconnect() {
+  // Loop until we're reconnected
+  while (!mqttClient.connected()) {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (mqttClient.connect("arduinoClient", mqtt_username, mqtt_password)) {
+      Serial.println("connected");
+      mqttClient.subscribe("cmd");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
+void feed() {
+  myservo.write(open);
+  delay(500);
+  myservo.write(close);
+  journal += daysOfTheWeek[timeClient.getDay()];
+  journal += " ";
+  journal += timeClient.getFormattedTime();
+  journal += "\r\n";
+  mqttClient.publish("Log", journal.c_str());
+
+  Serial.print(timeClient.getFormattedTime());
+  Serial.println(" Feed now");
 }
