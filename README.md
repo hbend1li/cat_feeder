@@ -2,9 +2,7 @@
 
 ## Video
 
-<video controls="controls">
-<source src="doc/video_2021-07-07_13-30-35.mp4" type="video/mp4">
-</video>
+[![CAT Feeder](doc/photo_2021-07-07_13-32-09.jpg)](doc/video_2021-07-07_13-30-35.mp4)
 
 ## reference
 
