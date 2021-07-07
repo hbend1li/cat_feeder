@@ -2,7 +2,11 @@
 
 ## Video
 
-![](doc/video_2021-07-07_13-30-35.mp4)
+<figure class="video_container">
+  <video controls="true" allowfullscreen="true" poster="doc/photo_2021-07-07_13-32-09.jpg">
+    <source src="doc/video_2021-07-07_13-30-35.mp4" type="video/mp4">
+  </video>
+</figure>
 
 ## reference
 
