@@ -7,6 +7,26 @@
             "password": "",
             "port": 1883,
             "clientId": "vsmqtt_client"
+        },
+        {
+            "name": "hivemq.com",
+            "host": "broker.hivemq.com",
+            "port": 1883,
+            "clientId": "vsmqtt_client"
+        },
+        {
+            "name": "emqx.io",
+            "host": "broker.emqx.io",
+            "port": 1883,
+            "clientId": "vsmqtt_client"
+        },
+        {
+            "name": "dioty",
+            "host": "mqtt.dioty.co",
+            "port": 1883,
+            "clientId": "h.bendali@gmail.com",
+            "username": "h.bendali@gmail.com",
+            "password": "3b8b740c"
         }
     ],
     "files.associations": {

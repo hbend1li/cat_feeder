@@ -5,22 +5,22 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
-// const char* ssid = "Hack5";
-// const char* password = "#Zline159";
-const char* ssid = "openSUSE";
-const char* password = "12345678";
+const char* ssid = "Hack5";
+const char* password = "#Zline159";
 /* Put IP Address details */
-// IPAddress local_ip(192, 168, 254, 253);
-// IPAddress gateway(192, 168, 254, 254);
-// IPAddress subnet(255, 255, 255, 0);
+IPAddress local_ip(192, 168, 254, 253);
+IPAddress gateway(192, 168, 254, 254);
+IPAddress subnet(255, 255, 255, 0);
 ESP8266WebServer server(80);
 WiFiClient espClient;
 
 // MQTT Broker
 #include <PubSubClient.h>
 
-const char* mqtt_broker = "mqtt.flespi.io";
-const char* mqtt_username = "FvBmZFhLqUUra9ATmODV8bkqF29EjzLOVc1IG6kUP2bPZAw9e0UbZ3ruVoW5MxHv";
+const char* mqtt_broker = "broker.hivemq.com";
+const char* mqtt_username = "";
+// const char* mqtt_broker = "mqtt.flespi.io";
+// const char* mqtt_username = "FvBmZFhLqUUra9ATmODV8bkqF29EjzLOVc1IG6kUP2bPZAw9e0UbZ3ruVoW5MxHv";
 const char* mqtt_password = "";
 const int mqtt_port = 1883;
 PubSubClient mqttClient(espClient);
@@ -29,7 +29,7 @@ String journal = "";
 // NTP server
 #include <NTPClient.h>
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600);
+NTPClient timeClient(ntpUDP, "time.google.com", 3600);
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 int time_over = 0;
 
@@ -44,13 +44,14 @@ int servo_pin = D5;  // for ESP8266 microcontroller
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#define DHTTYPE DHT11
 uint8_t DHTPin = D7;
-DHT dht(DHTPin, DHTTYPE);
+DHT dht(DHTPin, DHT11);
 float Temperature = 0;
 float Humidity = 0;
 float oldTemperature = 0;
 float oldHumidity = 0;
+float offsetTemperature = -8.4;
+float offsetHumidity = 25;
 
 //variabls for blinking an LED with Millis
 const int led = D0;                // ESP8266 Pin to which onboard LED is connected
@@ -163,6 +164,7 @@ void loop() {
     mqttReconnect();
   }
   mqttClient.loop();
+
   timeClient.update();
 
   //loop to blink without delay
@@ -172,26 +174,26 @@ void loop() {
     previousMillis = currentMillis;
     // if the LED is off turn it on and vice-versa:
     ledState = not(ledState);
-    // set the LED with the ledState of the variable:
+    // set the LED with thtime.google.come ledState of the variable:
     digitalWrite(led, ledState);
 
     if (ledState) {
-      Temperature = dht.readTemperature();  // Gets the values of the temperature
+      Temperature = dht.readTemperature() + offsetTemperature;  // Gets the values of the temperature
       if (Temperature != oldTemperature) {
         oldTemperature = Temperature;
         String T = String(Temperature, 1);
-        mqttClient.publish("Temperature", T.c_str());
+        mqttClient.publish("qfd564dsf654qsdf/Temperature", T.c_str());
         Serial.print(timeClient.getFormattedTime());
         Serial.print(" Temperature ");
         Serial.print(T.c_str());
         Serial.println("°C");
       }
 
-      Humidity = dht.readHumidity();  // Gets the values of the humidity
+      Humidity = dht.readHumidity() + offsetHumidity;  // Gets the values of the humidity
       if (Humidity != oldHumidity) {
         oldHumidity = Humidity;
         String H = String(Humidity, 0);
-        mqttClient.publish("Humidity", H.c_str());
+        mqttClient.publish("qfd564dsf654qsdf/Humidity", H.c_str());
         Serial.print(timeClient.getFormattedTime());
         Serial.print(" Humidity ");
         Serial.print(H.c_str());
@@ -200,7 +202,7 @@ void loop() {
 
       if (time_over) {
         time_over--;
-        mqttClient.publish("timer", String(time_over).c_str());
+        mqttClient.publish("qfd564dsf654qsdf/timer", String(time_over).c_str());
       } else {
         time_over = 21600;
         feed();
@@ -214,7 +216,8 @@ void handle_OnConnect() {
 }
 
 void handle_feed() {
-  //server.send(200, "text/html", SendHTML());
+  feed();
+  server.send(200, "text/html", SendHTML());
 }
 
 void handle_dht() {
@@ -223,7 +226,7 @@ void handle_dht() {
   dht += ", \"Humidity\":";
   dht += Humidity;
   dht += ", \"NTPClient\":\"";
-  dht += stringDateTime;
+  dht += timeClient.getFormattedTime();
   dht += "\"}";
 
   server.send(200, "application/json", dht);
@@ -234,7 +237,7 @@ void handle_NotFound() {
 }
 
 String SendHTML() {
-  String ptr = "<!DOCTYPE html> <html>\n";
+  String ptr = "<!DOCTYPE time.google.comhtml> <html>\n";
   ptr += "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
   ptr += "<link href=\"https://fonts.googleapis.com/css?family=Open+Sans:300,400,600\" rel=\"stylesheet\">\n";
   ptr += "<title>ESP8266 Weather Report</title>\n";
@@ -350,9 +353,10 @@ void mqttReconnect() {
   while (!mqttClient.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (mqttClient.connect("arduinoClient", mqtt_username, mqtt_password)) {
+    if (mqttClient.connect("CAT_Feeder", mqtt_username, mqtt_password)) {
       Serial.println("connected");
-      mqttClient.subscribe("cmd");
+      mqttClient.publish("qfd564dsf654qsdf/connect", "connected");
+      mqttClient.subscribe("qfd564dsf654qsdf/cmd");
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
@@ -371,7 +375,7 @@ void feed() {
   journal += " ";
   journal += timeClient.getFormattedTime();
   journal += "\r\n";
-  mqttClient.publish("Log", journal.c_str());
+  mqttClient.publish("qfd564dsf654qsdf/log", journal.c_str());
 
   Serial.print(timeClient.getFormattedTime());
   Serial.println(" Feed now");
