@@ -31,7 +31,10 @@ String journal = "";
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.google.com", 3600);
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+int triggerH = 0;
+int triggerM = 0;
 int time_over = 0;
+int default_cycle = 21600;  // 6 Heur
 
 // // Servo motor
 #include <Servo.h>
@@ -204,7 +207,11 @@ void loop() {
         time_over--;
         mqttClient.publish("qfd564dsf654qsdf/timer", String(time_over).c_str());
       } else {
-        time_over = 21600;
+        time_over = default_cycle;
+        feed();
+      }
+
+      if (timeClient.getHours() == triggerH && timeClient.getMinutes() == triggerM && timeClient.getSeconds() == 0) {
         feed();
       }
     }
@@ -338,13 +345,23 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   Serial.println(buffer);
   if (buffer == "feed") {
     feed();
-    // } else if (buffer.indexOf(":")) {
-    //   // timer
-    //   mqttClient.publish("next_feed", buffer.c_str());
+  } else if (buffer.indexOf(":") != -1) {
+    int triggerH = buffer.substring(buffer.indexOf(":")).toInt();
+    int triggerM = buffer.substring(buffer.indexOf(":") + 1, buffer.length()).toInt();
+
+    Serial.print("Set trigger to ");
+    Serial.print(triggerH);
+    Serial.print(":");
+    Serial.println(triggerM);
+
   } else {
-    time_over = buffer.toInt();
-    Serial.print("Update timer ");
-    Serial.println(time_over, DEC);
+    if (buffer.toInt() != 0) {
+      time_over = buffer.toInt();
+      default_cycle = time_over;
+      Serial.print("Update timer every ");
+      Serial.print(time_over, DEC);
+      Serial.println(" s");
+    }
   }
 }
 
