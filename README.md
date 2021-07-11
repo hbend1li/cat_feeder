@@ -4,6 +4,8 @@
 
 ## Schematic
 
+![schematic](doc/drawing.svg)  
+
 [File SVG](doc/cat_feeder-v3.svg)  
 [File PDF](doc/cat_feeder-v2.pdf)
 
