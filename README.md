@@ -4,8 +4,8 @@
 
 ## Schematic
 
-![schematic](doc/cat_feeder-v3.svg)  
-[PDF File](doc/cat_feeder-v2.pdf)
+[File SVG](doc/cat_feeder-v3.svg)  
+[File PDF](doc/cat_feeder-v2.pdf)
 
 ## Video
 
