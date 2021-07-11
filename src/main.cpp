@@ -7,6 +7,7 @@
 #include <WiFiUdp.h>
 const char* ssid = "Hack5";
 const char* password = "#Zline159";
+
 /* Put IP Address details */
 IPAddress local_ip(192, 168, 254, 253);
 IPAddress gateway(192, 168, 254, 254);
@@ -16,7 +17,6 @@ WiFiClient espClient;
 
 // MQTT Broker
 #include <PubSubClient.h>
-
 const char* mqtt_broker = "broker.hivemq.com";
 const char* mqtt_username = "";
 // const char* mqtt_broker = "mqtt.flespi.io";
@@ -62,12 +62,6 @@ unsigned long previousMillis = 0;  // will store last time LED was updated
 const long interval = 1000;        // interval at which to blink (milliseconds)
 int ledState = LOW;                // ledState used to set the LED
 
-// uint8_t LED1pin = D7;
-// bool LED1status = LOW;
-
-// uint8_t LED2pin = D6;
-// bool LED2status = LOW;
-
 String stringDateTime = "";
 
 void handle_OnConnect();
@@ -76,7 +70,7 @@ void handle_dht();
 void handle_NotFound();
 String SendHTML();
 void mqttCallback(char* topic, byte* payload, unsigned int length);
-void mqttReconnect();
+void mqttIdle();
 void feed();
 
 void setup() {
@@ -163,10 +157,7 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
   server.handleClient();
-  if (!mqttClient.connected()) {
-    mqttReconnect();
-  }
-  mqttClient.loop();
+  mqttIdle();
 
   timeClient.update();
 
@@ -181,6 +172,7 @@ void loop() {
     digitalWrite(led, ledState);
 
     if (ledState) {
+
       Temperature = dht.readTemperature() + offsetTemperature;  // Gets the values of the temperature
       if (Temperature != oldTemperature) {
         oldTemperature = Temperature;
@@ -365,9 +357,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
-void mqttReconnect() {
-  // Loop until we're reconnected
-  while (!mqttClient.connected()) {
+void mqttIdle() {
+  if (!mqttClient.loop()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
     if (mqttClient.connect("CAT_Feeder", mqtt_username, mqtt_password)) {
