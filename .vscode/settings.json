@@ -1,16 +1,15 @@
 {
     "vsmqtt.brokerProfiles": [
         {
+            "name": "hivemq.com",
+            "host": "broker.hivemq.com",
+            "port": 1883,
+            "clientId": "vsmqtt_client",
+        },{
             "name": "flespi.io CAT Feeder",
             "host": "mqtt.flespi.io",
             "username": "FvBmZFhLqUUra9ATmODV8bkqF29EjzLOVc1IG6kUP2bPZAw9e0UbZ3ruVoW5MxHv",
             "password": "",
-            "port": 1883,
-            "clientId": "vsmqtt_client"
-        },
-        {
-            "name": "hivemq.com",
-            "host": "broker.hivemq.com",
             "port": 1883,
             "clientId": "vsmqtt_client"
         },

@@ -36,6 +36,8 @@ int triggerM = 0;
 int default_cycle = 21600;  // 6 Heur
 unsigned long alarm = 0;
 
+bool idle = 0;
+
 // // Servo motor
 #include <Servo.h>
 Servo myservo;       // create servo object to control a servo
@@ -204,6 +206,10 @@ void loop() {
       } else {
         mqttClient.publish("qfd564dsf654qsdf/timer", String(alarm-timeClient.getEpochTime()).c_str());
       }
+
+      idle = !idle;
+      mqttClient.publish("qfd564dsf654qsdf/idle", String(idle).c_str());
+
     }
   }
 }
