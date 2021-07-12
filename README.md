@@ -19,13 +19,16 @@ The ESP8266 module is connect to mqtt broker and ntp server.
 
 ## Feeder Model
 
-[File SVG](doc/cat_feeder-v3.svg)  
+[![](doc/path4139.png)](doc/cat_feeder-v3.svg)
+  
 [File PDF](doc/cat_feeder-v2.pdf)
 
 ## Video
 
 ![doc/photo_2021-07-07_13-32-09.jpg](doc/video_2021-07-07_14-10-44.mp4)
 ![https://www.youtube.com/watch?v=mHq475KdVUU](https://www.youtube.com/watch?v=mHq475KdVUU)
+
+[![](doc/photo_2021-07-07_13-32-09.jpg)](https://youtu.be/OYqIKWJbhZE)
 
 ## reference
 
