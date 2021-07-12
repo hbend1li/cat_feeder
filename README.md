@@ -2,9 +2,22 @@
 
 ![CAT Feeder](doc/cat_feeder.png)
 
-## Schematic
+Today I am building an ESP8266 based automatic cat feeder that can automatically feed my cat on a regular basis. 
+
+In this circuit, we use a:
+- ESP8266 Controle module (NodeMCU).
+- Servo motor (SG90) is used to deliver and controle the contitier of food.
+- DHT11 to get the temperature and humidity of envirenment.
+- The internet to set the feed time automatically, monitor and controle manually the system remotley.
+
+The ESP8266 module is connect to mqtt broker and ntp server.
+
+## Circuit Diagram
 
 ![schematic](doc/drawing.svg)  
+
+
+## Feeder Model
 
 [File SVG](doc/cat_feeder-v3.svg)  
 [File PDF](doc/cat_feeder-v2.pdf)
