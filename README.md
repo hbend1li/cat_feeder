@@ -1,6 +1,6 @@
 # CAT Feeder
 
-![CAT Feeder](doc/cat_feeder.png)
+![CAT Feeder](doc/autocat_feeder.svg)
 
 Today I am building an ESP8266 based automatic cat feeder that can automatically feed my cat on a regular basis. 
 
