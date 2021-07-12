@@ -25,7 +25,7 @@ The ESP8266 module is connect to mqtt broker and ntp server.
 
 ## Video
 
-[![](doc/photo_2021-07-07_13-32-09.jpg)](https://youtu.be/OYqIKWJbhZE)
+[![](doc/photo_2021-07-12_23-38-07.jpg)](https://youtu.be/OYqIKWJbhZE)
 ![https://youtu.be/OYqIKWJbhZE](https://youtu.be/OYqIKWJbhZE)
 
 ## reference

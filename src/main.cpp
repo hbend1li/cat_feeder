@@ -402,9 +402,10 @@ void mlog(String msg, bool mqtt){
   text += " ";
   text += msg;
   Serial.println(text);
-  if (mqtt){
+  //if (mqtt == true){
     journal += text;
     journal += "\r\n";
     mqttClient.publish("qfd564dsf654qsdf/log", journal.c_str());
-  }
+  //  Serial.println("set log");
+  //}
 }
