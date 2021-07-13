@@ -10,9 +10,9 @@
 const char* ssid = "Hack5";
 const char* password = "#Zline159";
 /* Put IP Address details */
-IPAddress local_ip(192, 168, 254, 253);
+/*IPAddress local_ip(192, 168, 254, 253);
 IPAddress gateway(192, 168, 254, 254);
-IPAddress subnet(255, 255, 255, 0);
+IPAddress subnet(255, 255, 255, 0);*/
 ESP8266WebServer server(80);
 WiFiClient espClient;
 
@@ -32,18 +32,16 @@ String journal = "";
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.google.com", 3600);
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-int default_cycle = 21600;  // 21600 Feed every 6 Hour
-unsigned long alarm = 0;
-
-bool idle = 0;
+int default_cycle;  // 21600 Feed every 6 Hour
+unsigned long alarm;
 
 // // Servo motor
 #include <Servo.h>
 Servo myservo;       // create servo object to control a servo
 int open = 0;        // variable to store the servo position
-int close = 125;     // variable to store the servo position
+int close = 180;     // variable to store the servo position
 int servo_pin = D5;  // for ESP8266 microcontroller
-int qteFeed = 5;
+int qteFood;
 
 // DHT Sensor
 #include <Adafruit_Sensor.h>
@@ -57,6 +55,11 @@ float oldTemperature = 0;
 float oldHumidity = 0;
 float offsetTemperature = -8.4;
 float offsetHumidity = 25;
+
+// EEPROM
+#include "EEPROM.h"
+#define adr_qteFood 0x00
+#define adr_timer 0x02
 
 //variabls for blinking an LED with Millis
 const int led = D0;                // ESP8266 Pin to which onboard LED is connected
@@ -75,6 +78,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length);
 void mqttIdle();
 void feed();
 void console(String msg);
+int getQuality();
 
 void setup() {
   pinMode(led, OUTPUT);
@@ -88,6 +92,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\r\nBooting");
   WiFi.mode(WIFI_STA);
+  WiFi.hostname("CAT-Feeder");
   WiFi.begin(ssid, password);
   //WiFi.config(local_ip, gateway, subnet);
 
@@ -152,11 +157,25 @@ void setup() {
   Serial.println("HTTP server started");
 
   timeClient.begin();
+  timeClient.update();
 
   mqttClient.setServer(mqtt_broker, mqtt_port);
   mqttClient.setCallback(mqttCallback);
 
   mqttIdle();
+
+  EEPROM.begin(10);
+
+  qteFood = EEPROM.read(adr_qteFood);
+  default_cycle = (EEPROM.read(adr_timer) << 8) | EEPROM.read(adr_timer + 1);
+
+  alarm = timeClient.getEpochTime() + default_cycle;
+
+  mqttClient.publish(mqtt_topic("qteFood"), String(qteFood).c_str());
+  mqttClient.publish(mqtt_topic("timer"), String(alarm - timeClient.getEpochTime()).c_str());
+  mqttClient.publish(mqtt_topic("log"), journal.c_str());
+  mqttClient.publish(mqtt_topic("rssi"), String(getQuality()).c_str());
+
   console("Start");
 }
 
@@ -206,8 +225,7 @@ void loop() {
         mqttClient.publish(mqtt_topic("timer"), String(alarm - timeClient.getEpochTime()).c_str());
       }
 
-      idle = !idle;
-      mqttClient.publish(mqtt_topic("idle"), String(idle).c_str());
+      mqttClient.publish(mqtt_topic("rssi"), String(getQuality()).c_str());
     }
   }
 }
@@ -357,12 +375,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     //   int h = triggerH - timeClient.getHours();
 
   } else if (buffer[0] == 'q') {  // qte of food
-    int qteFeed = buffer.substring(1, buffer.length()).toInt();
+    qteFood = buffer.substring(1, buffer.length()).toInt();
 
-    txt = "qteFeed = ";
-    txt += qteFeed;
+    txt = "qteFood = ";
+    txt += qteFood;
     console(txt);
-    mqttClient.publish(mqtt_topic("qteFeed"), journal.c_str());
+    mqttClient.publish(mqtt_topic("qteFood"), String(qteFood).c_str());
+    EEPROM.write(adr_qteFood, qteFood);
+    EEPROM.commit();
 
   } else if (buffer.toInt() != 0) {  // feed after x sec
     default_cycle = buffer.toInt();
@@ -372,6 +392,10 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     txt += default_cycle;
     txt += "s";
     console(txt);
+
+    EEPROM.write(adr_timer, default_cycle >> 8);
+    EEPROM.write(adr_timer + 1, default_cycle);
+    EEPROM.commit();
   }
 }
 
@@ -395,16 +419,20 @@ void mqttIdle() {
 
 void feed() {
   myservo.write(open);
-  delay(qteFeed * 100);
+  delay(qteFood * 100);
   myservo.write(close);
 
+  journal = "";
+  journal += "Feed at ";
   journal += daysOfTheWeek[timeClient.getDay()];
   journal += " ";
   journal += timeClient.getFormattedTime();
+  journal += " Qte: ";
+  journal += String(qteFood);
   journal += "\r\n";
   mqttClient.publish(mqtt_topic("log"), journal.c_str());
 
-  console("Feed now");
+  console("Feed now Qte: " + String(qteFood));
 }
 
 void console(String msg) {
@@ -413,4 +441,15 @@ void console(String msg) {
   text += " ";
   text += msg;
   Serial.println(text);
+}
+
+int getQuality() {
+  if (WiFi.status() != WL_CONNECTED)
+    return -1;
+  int dBm = WiFi.RSSI();
+  if (dBm <= -100)
+    return 0;
+  if (dBm >= -50)
+    return 100;
+  return 2 * (dBm + 100);
 }

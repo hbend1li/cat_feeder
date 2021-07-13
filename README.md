@@ -52,7 +52,7 @@ WiFi settings
 28 #define mqtt_topic(topic) ((String) "qfd564dsf654qsdf/" + topic).c_str()
 ```
 replace **qfd564dsf654qsdf** with custom main topic
-
+123456789
 ```cpp
 30 // NTP server
    ...
