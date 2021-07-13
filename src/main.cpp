@@ -44,6 +44,7 @@ Servo myservo;       // create servo object to control a servo
 int open = 0;        // variable to store the servo position
 int close = 125;     // variable to store the servo position
 int servo_pin = D5;  // for ESP8266 microcontroller
+int qteFeed = 5;
 
 // DHT Sensor
 #include <Adafruit_Sensor.h>
@@ -65,7 +66,6 @@ const long interval = 1000;        // interval at which to blink (milliseconds)
 int ledState = LOW;                // ledState used to set the LED
 
 String stringDateTime = "";
-int qteFeed = 50;
 
 void handle_OnConnect();
 void handle_feed();
@@ -359,21 +359,19 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   } else if (buffer[0] == 'q') {
     int qteFeed = buffer.substring(1, buffer.length()).toInt();
 
-    txt = "Set qteFeed to ";
+    txt = "qteFeed = ";
     txt += qteFeed;
     console(txt);
+    mqttClient.publish("qfd564dsf654qsdf/qteFeed", journal.c_str());
 
-  } else {
-    if (buffer.toInt() != 0) {
-      default_cycle = buffer.toInt();
-      alarm = timeClient.getEpochTime() + default_cycle;
+  } else if (buffer.toInt() != 0) {
+    default_cycle = buffer.toInt();
+    alarm = timeClient.getEpochTime() + default_cycle;
 
-      txt = "Update timer every ";
-      txt += default_cycle;
-      txt += "s";
-      console(txt);
-
-    }
+    txt = "Update timer every ";
+    txt += default_cycle;
+    txt += "s";
+    console(txt);
   }
 }
 
@@ -397,7 +395,7 @@ void mqttIdle() {
 
 void feed() {
   myservo.write(open);
-  delay(qteFeed*10);
+  delay(qteFeed*100);
   myservo.write(close);
     
   journal += daysOfTheWeek[timeClient.getDay()];
