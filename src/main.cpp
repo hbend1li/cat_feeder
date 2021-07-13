@@ -5,9 +5,10 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
+
+// WiFi settings
 const char* ssid = "Hack5";
 const char* password = "#Zline159";
-
 /* Put IP Address details */
 IPAddress local_ip(192, 168, 254, 253);
 IPAddress gateway(192, 168, 254, 254);
@@ -19,12 +20,12 @@ WiFiClient espClient;
 #include <PubSubClient.h>
 const char* mqtt_broker = "broker.hivemq.com";
 const char* mqtt_username = "";
-// const char* mqtt_broker = "mqtt.flespi.io";
-// const char* mqtt_username = "FvBmZFhLqUUra9ATmODV8bkqF29EjzLOVc1IG6kUP2bPZAw9e0UbZ3ruVoW5MxHv";
 const char* mqtt_password = "";
 const int mqtt_port = 1883;
 PubSubClient mqttClient(espClient);
 String journal = "";
+
+#define mqtt_topic(topic) ((String) "qfd564dsf654qsdf/" + topic).c_str()
 
 // NTP server
 #include <NTPClient.h>
@@ -180,7 +181,7 @@ void loop() {
       if (Temperature != oldTemperature) {
         oldTemperature = Temperature;
         String T = String(Temperature, 1);
-        mqttClient.publish("qfd564dsf654qsdf/Temperature", T.c_str());
+        mqttClient.publish(mqtt_topic("Temperature"), T.c_str());
         String txt = "Temperature ";
         txt += T.c_str();
         txt += "°C";
@@ -191,7 +192,7 @@ void loop() {
       if (Humidity != oldHumidity) {
         oldHumidity = Humidity;
         String H = String(Humidity, 0);
-        mqttClient.publish("qfd564dsf654qsdf/Humidity", H.c_str());
+        mqttClient.publish(mqtt_topic("Humidity"), H.c_str());
         String txt = "Humidity ";
         txt += H.c_str();
         txt += "%";
@@ -202,11 +203,11 @@ void loop() {
         feed();
         alarm = timeClient.getEpochTime() + default_cycle;
       } else {
-        mqttClient.publish("qfd564dsf654qsdf/timer", String(alarm - timeClient.getEpochTime()).c_str());
+        mqttClient.publish(mqtt_topic("timer"), String(alarm - timeClient.getEpochTime()).c_str());
       }
 
       idle = !idle;
-      mqttClient.publish("qfd564dsf654qsdf/idle", String(idle).c_str());
+      mqttClient.publish(mqtt_topic("idle"), String(idle).c_str());
     }
   }
 }
@@ -361,7 +362,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     txt = "qteFeed = ";
     txt += qteFeed;
     console(txt);
-    mqttClient.publish("qfd564dsf654qsdf/qteFeed", journal.c_str());
+    mqttClient.publish(mqtt_topic("qteFeed"), journal.c_str());
 
   } else if (buffer.toInt() != 0) {  // feed after x sec
     default_cycle = buffer.toInt();
@@ -380,8 +381,8 @@ void mqttIdle() {
     // Attempt to connect
     if (mqttClient.connect("CAT_Feeder", mqtt_username, mqtt_password)) {
       Serial.println("connected");
-      mqttClient.publish("qfd564dsf654qsdf/connect", "connected");
-      mqttClient.subscribe("qfd564dsf654qsdf/cmd");
+      mqttClient.publish(mqtt_topic("connect"), "connected");
+      mqttClient.subscribe(mqtt_topic("cmd"));
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
@@ -401,7 +402,7 @@ void feed() {
   journal += " ";
   journal += timeClient.getFormattedTime();
   journal += "\r\n";
-  mqttClient.publish("qfd564dsf654qsdf/log", journal.c_str());
+  mqttClient.publish(mqtt_topic("log"), journal.c_str());
 
   console("Feed now");
 }

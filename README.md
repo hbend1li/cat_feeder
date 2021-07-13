@@ -28,6 +28,38 @@ The ESP8266 module is connect to mqtt broker and ntp server.
 [![](doc/photo_2021-07-12_23-38-07.jpg)](https://youtu.be/edkQ1ui7OJM)
 ![https://youtu.be/edkQ1ui7OJM](https://youtu.be/edkQ1ui7OJM)
 
+## Settings
+
+WiFi settings
+```cpp
+ 9 // WiFi settings
+10 const char* ssid = "open_wifi";
+11 const char* password = "12345678";
+12 /* Put IP Address details */
+13 IPAddress local_ip(192, 168, 254, 253);
+14 IPAddress gateway(192, 168, 254, 254);
+15 IPAddress subnet(255, 255, 255, 0);
+```
+
+```cpp
+19 // MQTT Broker
+20 #include <PubSubClient.h>
+21 const char* mqtt_broker = "broker.mqtt.com";
+22 const char* mqtt_username = "";
+23 const char* mqtt_password = "";
+24 const int mqtt_port = 1883;
+   ...
+28 #define mqtt_topic(topic) ((String) "qfd564dsf654qsdf/" + topic).c_str()
+```
+
+```cpp
+30 // NTP server
+   ...
+33 NTPClient timeClient(ntpUDP, "time.google.com", 3600);
+   ...
+35 int default_cycle = 21600;  // 21600 Feed every 6 Hour
+```
+
 ## reference
 
 - [PlatformIO](https://docs.platformio.org/en/latest/platforms/espressif8266.html)
