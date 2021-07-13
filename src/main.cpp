@@ -31,9 +31,7 @@ String journal = "";
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "time.google.com", 3600);
 char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-int triggerH = 0;
-int triggerM = 0;
-int default_cycle = 21600;  // 6 Heur
+int default_cycle = 21600;  // 21600 Feed every 6 Hour
 unsigned long alarm = 0;
 
 bool idle = 0;
@@ -178,15 +176,14 @@ void loop() {
     digitalWrite(led, ledState);
 
     if (ledState) {
-
       Temperature = dht.readTemperature() + offsetTemperature;  // Gets the values of the temperature
       if (Temperature != oldTemperature) {
         oldTemperature = Temperature;
         String T = String(Temperature, 1);
         mqttClient.publish("qfd564dsf654qsdf/Temperature", T.c_str());
-        String  txt="Temperature ";
-                txt += T.c_str();
-                txt += "°C";
+        String txt = "Temperature ";
+        txt += T.c_str();
+        txt += "°C";
         console(txt);
       }
 
@@ -195,22 +192,21 @@ void loop() {
         oldHumidity = Humidity;
         String H = String(Humidity, 0);
         mqttClient.publish("qfd564dsf654qsdf/Humidity", H.c_str());
-        String  txt="Humidity ";
-                txt += H.c_str();
-                txt += "%";
+        String txt = "Humidity ";
+        txt += H.c_str();
+        txt += "%";
         console(txt);
       }
 
-      if (alarm < timeClient.getEpochTime() ) {
+      if (alarm < timeClient.getEpochTime()) {
         feed();
         alarm = timeClient.getEpochTime() + default_cycle;
       } else {
-        mqttClient.publish("qfd564dsf654qsdf/timer", String(alarm-timeClient.getEpochTime()).c_str());
+        mqttClient.publish("qfd564dsf654qsdf/timer", String(alarm - timeClient.getEpochTime()).c_str());
       }
 
       idle = !idle;
       mqttClient.publish("qfd564dsf654qsdf/idle", String(idle).c_str());
-
     }
   }
 }
@@ -332,9 +328,9 @@ String SendHTML() {
 }
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  String  txt = "Message arrived [";
-          txt += topic;
-          txt += "] ";
+  String txt = "Message arrived [";
+  txt += topic;
+  txt += "] ";
   console(txt);
 
   String buffer = "";
@@ -346,17 +342,20 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   if (buffer == "feed") {
     feed();
 
-  } else if (buffer.indexOf(":") != -1) {
-    int triggerH = buffer.substring(buffer.indexOf(":")).toInt();
-    int triggerM = buffer.substring(buffer.indexOf(":") + 1, buffer.length()).toInt();
+    // } else if (buffer.indexOf(":") != -1) {  // feed at hh:mm
+    //   int triggerH = buffer.substring(buffer.indexOf(":")).toInt();
+    //   int triggerM = buffer.substring(buffer.indexOf(":") + 1, buffer.length()).toInt();
 
-    txt = "Set trigger to ";
-    txt += triggerH;
-    txt += ":";
-    txt += triggerM;
-    console(txt);
+    //   txt = "Feed at ";
+    //   txt += triggerH;
+    //   txt += ":";
+    //   txt += triggerM;
+    //   console(txt);
 
-  } else if (buffer[0] == 'q') {
+    //   alarm = timeClient.getEpochTime() + (triggerH * 3600) + (triggerM * 60);
+    //   int h = triggerH - timeClient.getHours();
+
+  } else if (buffer[0] == 'q') {  // qte of food
     int qteFeed = buffer.substring(1, buffer.length()).toInt();
 
     txt = "qteFeed = ";
@@ -364,11 +363,11 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     console(txt);
     mqttClient.publish("qfd564dsf654qsdf/qteFeed", journal.c_str());
 
-  } else if (buffer.toInt() != 0) {
+  } else if (buffer.toInt() != 0) {  // feed after x sec
     default_cycle = buffer.toInt();
     alarm = timeClient.getEpochTime() + default_cycle;
 
-    txt = "Update timer every ";
+    txt = "Feed every ";
     txt += default_cycle;
     txt += "s";
     console(txt);
@@ -395,19 +394,19 @@ void mqttIdle() {
 
 void feed() {
   myservo.write(open);
-  delay(qteFeed*100);
+  delay(qteFeed * 100);
   myservo.write(close);
-    
+
   journal += daysOfTheWeek[timeClient.getDay()];
   journal += " ";
   journal += timeClient.getFormattedTime();
   journal += "\r\n";
   mqttClient.publish("qfd564dsf654qsdf/log", journal.c_str());
-  
+
   console("Feed now");
 }
 
-void console(String msg){
+void console(String msg) {
   String text = "";
   text += timeClient.getFormattedTime();
   text += " ";
