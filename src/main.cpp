@@ -75,7 +75,7 @@ String SendHTML();
 void mqttCallback(char* topic, byte* payload, unsigned int length);
 void mqttIdle();
 void feed();
-void mlog(String msg, bool mqtt);
+void console(String msg);
 
 void setup() {
   pinMode(led, OUTPUT);
@@ -158,7 +158,7 @@ void setup() {
   mqttClient.setCallback(mqttCallback);
 
   mqttIdle();
-  mlog("Start", true);
+  console("Start");
 }
 
 void loop() {
@@ -187,7 +187,7 @@ void loop() {
         String  txt="Temperature ";
                 txt += T.c_str();
                 txt += "°C";
-        mlog(txt,false);
+        console(txt);
       }
 
       Humidity = dht.readHumidity() + offsetHumidity;  // Gets the values of the humidity
@@ -198,7 +198,7 @@ void loop() {
         String  txt="Humidity ";
                 txt += H.c_str();
                 txt += "%";
-        mlog(txt,false);
+        console(txt);
       }
 
       if (alarm < timeClient.getEpochTime() ) {
@@ -335,7 +335,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   String  txt = "Message arrived [";
           txt += topic;
           txt += "] ";
-  mlog(txt,false);
+  console(txt);
 
   String buffer = "";
   for (int i = 0; i < length; i++) {
@@ -354,14 +354,14 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     txt += triggerH;
     txt += ":";
     txt += triggerM;
-    mlog(txt,false);
+    console(txt);
 
   } else if (buffer[0] == 'q') {
     int qteFeed = buffer.substring(1, buffer.length()).toInt();
 
     txt = "Set qteFeed to ";
     txt += qteFeed;
-    mlog(txt,true);
+    console(txt);
 
   } else {
     if (buffer.toInt() != 0) {
@@ -371,7 +371,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
       txt = "Update timer every ";
       txt += default_cycle;
       txt += "s";
-      mlog(txt,false);
+      console(txt);
 
     }
   }
@@ -399,21 +399,20 @@ void feed() {
   myservo.write(open);
   delay(qteFeed*10);
   myservo.write(close);
-  mlog("Feed now", true);
+    
+  journal += daysOfTheWeek[timeClient.getDay()];
+  journal += " ";
+  journal += timeClient.getFormattedTime();
+  journal += "\r\n";
+  mqttClient.publish("qfd564dsf654qsdf/log", journal.c_str());
+  
+  console("Feed now");
 }
 
-void mlog(String msg, bool mqtt){
+void console(String msg){
   String text = "";
-  text += daysOfTheWeek[timeClient.getDay()];
-  text += " ";
   text += timeClient.getFormattedTime();
   text += " ";
   text += msg;
   Serial.println(text);
-  //if (mqtt == true){
-    journal += text;
-    journal += "\r\n";
-    mqttClient.publish("qfd564dsf654qsdf/log", journal.c_str());
-  //  Serial.println("set log");
-  //}
 }
