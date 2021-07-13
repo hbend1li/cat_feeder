@@ -174,7 +174,7 @@ void setup() {
   mqttClient.publish(mqtt_topic("qteFood"), String(qteFood).c_str());
   mqttClient.publish(mqtt_topic("timer"), String(alarm - timeClient.getEpochTime()).c_str());
   mqttClient.publish(mqtt_topic("log"), journal.c_str());
-  mqttClient.publish(mqtt_topic("rssi"), String(getQuality()).c_str());
+  mqttClient.publish(mqtt_topic("rssi"), String(WiFi.RSSI()).c_str());
 
   console("Start");
 }
@@ -225,7 +225,7 @@ void loop() {
         mqttClient.publish(mqtt_topic("timer"), String(alarm - timeClient.getEpochTime()).c_str());
       }
 
-      mqttClient.publish(mqtt_topic("rssi"), String(getQuality()).c_str());
+      mqttClient.publish(mqtt_topic("rssi"), String(WiFi.RSSI()).c_str());
     }
   }
 }
