@@ -65,6 +65,7 @@ const long interval = 1000;        // interval at which to blink (milliseconds)
 int ledState = LOW;                // ledState used to set the LED
 
 String stringDateTime = "";
+int qteFeed = 50;
 
 void handle_OnConnect();
 void handle_feed();
@@ -355,6 +356,13 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     txt += triggerM;
     mlog(txt,false);
 
+  } else if (buffer[0] == 'q') {
+    int qteFeed = buffer.substring(1, buffer.length()).toInt();
+
+    txt = "Set qteFeed to ";
+    txt += qteFeed;
+    mlog(txt,true);
+
   } else {
     if (buffer.toInt() != 0) {
       default_cycle = buffer.toInt();
@@ -389,7 +397,7 @@ void mqttIdle() {
 
 void feed() {
   myservo.write(open);
-  delay(500);
+  delay(qteFeed*10);
   myservo.write(close);
   mlog("Feed now", true);
 }
