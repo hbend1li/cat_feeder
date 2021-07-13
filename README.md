@@ -51,6 +51,7 @@ WiFi settings
    ...
 28 #define mqtt_topic(topic) ((String) "qfd564dsf654qsdf/" + topic).c_str()
 ```
+replace **qfd564dsf654qsdf** with custom main topic
 
 ```cpp
 30 // NTP server
@@ -59,6 +60,7 @@ WiFi settings
    ...
 35 int default_cycle = 21600;  // 21600 Feed every 6 Hour
 ```
+
 
 ## reference
 
